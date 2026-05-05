@@ -1,0 +1,70 @@
+import { useState } from 'react';
+import ProductList from './pages/ProductList.jsx.bk';
+
+function App() {
+  const [cart, setCart] = useState([]);
+
+  // Hàm thêm sản phẩm vào giỏ hàng
+  const addToCart = (product) => {
+    const exist = cart.find((x) => x.id === product.id);
+    if (exist) {
+      // Nếu đã có trong giỏ thì tăng số lượng qty
+      setCart(
+        cart.map((x) =>
+          x.id === product.id ? { ...exist, qty: exist.qty + 1 } : x
+        )
+      );
+    } else {
+      // Nếu chưa có thì thêm mới và đặt qty = 1
+      setCart([...cart, { ...product, qty: 1 }]);
+    }
+    alert(`Đã thêm ${product.name} vào giỏ hàng!`);
+  };
+
+  // Tính tổng số lượng món hàng trong giỏ
+  const totalItems = cart.reduce((a, c) => a + c.qty, 0);
+
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header / Navigation */}
+      <nav className="bg-blue-700 p-4 text-white shadow-md sticky top-0 z-50">
+        <div className="container mx-auto flex justify-between items-center">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl">🐟</span>
+            <h1 className="text-xl font-extrabold tracking-tight uppercase">
+              Thủy hải sản Việt Nam
+            </h1>
+          </div>
+          
+          <div className="flex items-center bg-blue-800 px-4 py-2 rounded-full cursor-pointer hover:bg-blue-900 transition-all">
+            <span className="mr-2">🛒</span>
+            <span className="font-bold">Giỏ hàng:</span>
+            <span className="ml-2 bg-red-500 text-white text-xs w-5 h-5 flex items-center justify-center rounded-full">
+              {totalItems}
+            </span>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <main>
+        <div className="bg-blue-50 py-10 mb-8">
+          <div className="container mx-auto text-center">
+            <h2 className="text-4xl font-black text-blue-900 mb-2">DANH SÁCH SẢN PHẨM</h2>
+            <p className="text-blue-600 font-medium">Thực phẩm tươi sống mỗi ngày - Đồ án tốt nghiệp TVU</p>
+          </div>
+        </div>
+
+        {/* Gọi Component Danh sách sản phẩm và truyền hàm addToCart xuống */}
+        <ProductList addToCart={addToCart} />
+      </main>
+
+      {/* Footer */}
+      <footer className="bg-white border-t mt-20 py-8 text-center text-gray-500 text-sm">
+        <p>© 2026 Website Bán Thủy hải sản Việt Nam - Sinh viên Tra Vinh University</p>
+      </footer>
+    </div>
+  );
+}
+
+export default App;
