@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from "../../api/axios";
+import { getAdminToken } from '../../utils/auth'; // Đảm bảo đường dẫn này đúng với dự án của bạn
 
 const createSlug = (str) => {
     if (!str) return "";
@@ -56,10 +57,19 @@ function AdminProduct({ searchTerm = "" }) {
     const handleDelete = async (id) => {
         if (window.confirm("Xác nhận xóa sản phẩm này?")) {
             try {
-                await axios.delete(`/products/${id}`);
+                const token = getAdminToken();
+                await axios.delete(`/products/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
                 fetchProducts();
                 alert("Đã xóa!");
-            } catch (error) { alert("Lỗi xóa sản phẩm"); }
+            } catch (error) { 
+                console.error("Lỗi xóa sản phẩm:", error.response);
+                alert("Lỗi xóa sản phẩm hoặc phiên đăng nhập hết hạn"); 
+            }
         }
     };
 
@@ -100,7 +110,9 @@ function AdminProduct({ searchTerm = "" }) {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        const token = getAdminToken();
         const data = new FormData();
+        
         data.append('name', formData.name);
         data.append('slug', createSlug(formData.name));
         data.append('price', parseFloat(formData.price) || 0);
@@ -117,13 +129,22 @@ function AdminProduct({ searchTerm = "" }) {
 
         try {
             await axios.post(isEditing ? `/products/${currentId}` : '/products', data, {
-                headers: { 'Content-Type': 'multipart/form-data' }
+                headers: { 
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
             });
             setShowModal(false);
             fetchProducts();
             alert("Thành công!");
         } catch (error) {
-            alert("Lỗi dữ liệu đầu vào");
+            console.error("Lỗi gửi dữ liệu:", error.response);
+            if (error.response?.status === 401) {
+                alert("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại hệ thống quản trị!");
+            } else {
+                alert(error.response?.data?.message || "Lỗi dữ liệu đầu vào");
+            }
         }
     };
 
@@ -251,7 +272,7 @@ function AdminProduct({ searchTerm = "" }) {
                                             <option value="fresh">Tươi sống</option>
                                             <option value="frozen">Đông lạnh</option>
                                             <option value="dried">Khô / Chế biến</option>
-                                            <option value="Fermented">Lên men</option>
+                                            <option value="fermentation">Lên men</option>
                                         </select>
                                     </div>
                                     <div>

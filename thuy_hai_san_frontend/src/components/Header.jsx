@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { getAdminToken, isAuthenticated } from '../utils/auth';
 
 function Header({ user, setUser, cartCount, searchTerm, setSearchTerm }) {
     const navigate = useNavigate();
@@ -82,6 +83,15 @@ function Header({ user, setUser, cartCount, searchTerm, setSearchTerm }) {
                                     <div className="bg-white shadow-2xl rounded-2xl py-3 border border-gray-100 overflow-hidden">
                                         <Link to="/" className="block px-4 py-2 text-xs font-bold text-gray-400 hover:bg-gray-50">Xem trang chủ</Link>
                                         <div className="h-[1px] bg-gray-100 my-1 mx-3"></div>
+                                        {/* MỤC MỚI THÊM VÀO: Báo cáo chung */}
+                                        <Link 
+                                            to="/admin/dashboard" 
+                                            onClick={() => setShowAdminMenu(false)} // Bấm xong thì đóng menu lại
+                                            className="flex items-center gap-2.5 px-4 py-2.5 text-slate-700 hover:bg-blue-50 hover:text-blue-900 text-xs font-black uppercase tracking-tight transition-colors"
+                                        >
+                                            <span>📊</span>
+                                            <span>Báo cáo chung (Dashboard)</span>
+                                        </Link>
                                         <Link to="/admin/products" className="block px-4 py-2.5 text-blue-900 font-bold text-sm hover:bg-blue-50 transition-colors">📦 Cập nhật Sản phẩm</Link>
                                         <Link to="/admin/categories" className="block px-4 py-2.5 text-blue-900 font-bold text-sm hover:bg-blue-50 transition-colors">📂 Cập nhật Phân loại</Link>
                                         <Link to="/admin/users" className="block px-4 py-2.5 text-blue-900 font-bold text-sm hover:bg-blue-50 transition-colors">👥 Quản lý Người dùng</Link>

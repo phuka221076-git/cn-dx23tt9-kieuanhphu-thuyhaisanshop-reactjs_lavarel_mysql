@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useLocation } from 'react-router-dom'; 
 import axios from "../../api/axios";
+import { getAdminToken } from '../../utils/auth'; // Đảm bảo đường dẫn helper này khớp với cấu trúc thư mục của bạn
 
 function AdminUser() {
     const [users, setUsers] = useState([]);
@@ -15,13 +16,17 @@ function AdminUser() {
     const initialForm = { name: '', email: '', password: '', phone: '', address: '', role: 'user', is_active: 1 };
     const [formData, setFormData] = useState(initialForm);
 
-    // Dùng useCallback để tránh render thừa và có thể gọi lại ở nhiều nơi
+    // ✅ ĐÃ FIX: Đính kèm Header Authorization cho yêu cầu lấy danh sách người dùng
     const fetchUsers = useCallback(async () => {
         try {
+            const token = getAdminToken();
             const res = await axios.get(`/users`, {
-                params: { search: searchTerm } // Truyền params kiểu này sạch hơn cộng chuỗi
+                params: { search: searchTerm },
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
             });
-            // Kiểm tra các trường hợp dữ liệu trả về khác nhau của Laravel
             const userData = res.data?.data || res.data;
             setUsers(Array.isArray(userData) ? userData : []);
         } catch (error) {
@@ -34,14 +39,24 @@ function AdminUser() {
         fetchUsers();
     }, [fetchUsers]); 
 
+    // ✅ ĐÃ FIX: Đính kèm Header Authorization cho yêu cầu thêm mới và cập nhật thông tin
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const token = getAdminToken();
             const payload = { ...formData, is_active: formData.is_active ? 1 : 0 };
+            
+            const config = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json'
+                }
+            };
+
             if (isEditing) {
-                await axios.put(`/users/${currentId}`, payload);
+                await axios.put(`/users/${currentId}`, payload, config);
             } else {
-                await axios.post('/users', payload);
+                await axios.post('/users', payload, config);
             }
             setShowModal(false);
             fetchUsers();
@@ -54,15 +69,21 @@ function AdminUser() {
     const openEdit = (user) => {
         setIsEditing(true);
         setCurrentId(user.id);
-        // Đảm bảo is_active luôn là Number để checkbox/logic hoạt động đúng
         setFormData({ ...user, password: '', is_active: Number(user.is_active) });
         setShowModal(true);
     };
 
+    // ✅ ĐÃ FIX: Đính kèm Header Authorization cho yêu cầu xóa nhân sự
     const handleDelete = async (id) => {
         if(window.confirm("Xác nhận xóa nhân sự này khỏi hệ thống?")) {
             try {
-                await axios.delete(`/users/${id}`);
+                const token = getAdminToken();
+                await axios.delete(`/users/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
                 fetchUsers();
             } catch (error) {
                 alert("Không thể xóa nhân sự này.");
@@ -139,7 +160,7 @@ function AdminUser() {
                 </table>
             </div>
 
-            {/* Modal - Giữ nguyên logic UI của Bạn */}
+            {/* Modal */}
             {showModal && (
                 <div className="fixed inset-0 bg-blue-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
                     <div className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl p-8 transform transition-all">

@@ -21,6 +21,7 @@ import AdminProduct from './pages/admin/AdminProduct';
 import AdminCategory from './pages/admin/AdminCategory';
 import AdminUser from './pages/admin/AdminUser'; 
 import AdminOrder from './pages/admin/AdminOrder';
+import AdminDashboard from './pages/admin/AdminDashboard'; // Import trang vừa tạo
 
 function App() {
   // 1. Quản lý Giỏ hàng
@@ -99,7 +100,8 @@ function App() {
               path="/admin/products" 
               element={user?.role === 'admin' ? <AdminProduct user={user} searchTerm={searchTerm} /> : <Navigate to="/login" />} 
             />
-            
+            {/* Route cho Admin quản trị */}
+            <Route path="/admin/dashboard" element={<AdminDashboard />} />
             <Route 
               path="/admin/categories" 
               element={user?.role === 'admin' ? <AdminCategory /> : <Navigate to="/login" />} 

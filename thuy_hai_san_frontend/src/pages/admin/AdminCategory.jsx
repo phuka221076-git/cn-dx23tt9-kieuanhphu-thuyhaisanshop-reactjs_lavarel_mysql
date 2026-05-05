@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import axios from "../../api/axios";
+import axios from "../../api/axios"; // Sử dụng biến cấu hình axios chung của dự án
+import { getAdminToken } from '../../utils/auth'; 
 
 function AdminCategory({ searchTerm = "" }) {
     const [categories, setCategories] = useState([]);
@@ -37,19 +38,38 @@ function AdminCategory({ searchTerm = "" }) {
         }));
     };
 
+    // ✅ ĐÃ FIX: Tích hợp Token hợp lệ vào headers của cả yêu cầu POST và PUT
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
+            const token = getAdminToken(); // Lấy token để xác thực quyền Admin
+
+            const config = {
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json'
+                }
+            };
+
             if (isEditing) {
-                await axios.put(`/categories/${currentId}`, formData);
+                // Gửi request cập nhật danh mục kèm Token bảo mật
+                await axios.put(`/categories/${currentId}`, formData, config);
             } else {
-                await axios.post('/categories', formData);
+                // Gửi request thêm mới danh mục kèm Token bảo mật
+                await axios.post('/categories', formData, config);
             }
+            
             setShowModal(false);
             fetchCategories();
-            alert("Thành công!");
+            alert("Thao tác dữ liệu thành công!");
         } catch (error) {
-            alert("Lỗi xử lý dữ liệu");
+            console.error("Lỗi xử lý dữ liệu:", error.response);
+            if (error.response?.status === 401) {
+                alert("Phiên đăng nhập Admin đã hết hạn! Vui lòng đăng nhập lại.");
+            } else {
+                alert(error.response?.data?.message || "Lỗi xử lý dữ liệu hệ thống");
+            }
         }
     };
 
@@ -70,13 +90,26 @@ function AdminCategory({ searchTerm = "" }) {
         setShowModal(true);
     };
 
+    // ✅ ĐÃ FIX: Bổ sung Token bảo mật cho thao tác XÓA danh mục hải sản
     const handleDelete = async (id) => {
         if (window.confirm("Xác nhận xóa danh mục này?")) {
             try {
-                await axios.delete(`/categories/${id}`);
+                const token = getAdminToken();
+                await axios.delete(`/categories/${id}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
                 fetchCategories();
+                alert("Xóa danh mục thành công!");
             } catch (error) {
-                alert("Không thể xóa danh mục đang có sản phẩm");
+                console.error("Lỗi xóa danh mục:", error.response);
+                if (error.response?.status === 401) {
+                    alert("Bạn không có quyền thực hiện thao tác này!");
+                } else {
+                    alert("Không thể xóa danh mục đang có sản phẩm liên kết");
+                }
             }
         }
     };
@@ -103,7 +136,6 @@ function AdminCategory({ searchTerm = "" }) {
             <div className="bg-white rounded-[2.5rem] shadow-sm overflow-hidden border border-gray-100">
                 <table className="w-full text-left">
                     <thead className="bg-blue-50/50 border-b border-gray-100">
-                        {/* ✅ ĐÃ FIX: Loại bỏ hoàn toàn whitespace text nodes và {" "} */}
                         <tr className="text-[10px] uppercase tracking-widest font-black text-blue-900/40">
                             <th className="p-5">STT</th>
                             <th className="p-5">Tên danh mục</th>
@@ -113,24 +145,34 @@ function AdminCategory({ searchTerm = "" }) {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
-                        {filteredCategories.map((item, index) => (
-                            <tr key={item.id} className="hover:bg-blue-50/20 transition-all">
-                                <td className="p-5 font-bold text-gray-400">{index + 1}</td>
-                                <td className="p-5 font-black text-blue-900 uppercase">{item.name}</td>
-                                <td className="p-5 text-gray-500 text-sm italic">{item.description || 'Chưa có mô tả'}</td>
-                                <td className="p-5">
-                                    <span className={`text-[9px] font-black uppercase ${item.is_active ? 'text-green-500' : 'text-gray-300'}`}>
-                                        ● {item.is_active ? 'Hiển thị' : 'Đã ẩn'}
-                                    </span>
-                                </td>
-                                <td className="p-5">
-                                    <div className="flex justify-center gap-2">
-                                        <button onClick={() => openEditModal(item)} className="p-2 hover:bg-blue-900 hover:text-white rounded-lg transition-all text-gray-300">📝</button>
-                                        <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-all text-gray-300">🗑️</button>
-                                    </div>
-                                </td>
+                        {loading ? (
+                            <tr>
+                                <td colSpan="5" className="text-center py-10 font-bold text-gray-400">Đang tải danh sách danh mục...</td>
                             </tr>
-                        ))}
+                        ) : filteredCategories.length > 0 ? (
+                            filteredCategories.map((item, index) => (
+                                <tr key={item.id} className="hover:bg-blue-50/20 transition-all">
+                                    <td className="p-5 font-bold text-gray-400">{index + 1}</td>
+                                    <td className="p-5 font-black text-blue-900 uppercase">{item.name}</td>
+                                    <td className="p-5 text-gray-500 text-sm italic">{item.description || 'Chưa có mô tả'}</td>
+                                    <td className="p-5">
+                                        <span className={`text-[9px] font-black uppercase ${item.is_active ? 'text-green-500' : 'text-gray-300'}`}>
+                                            ● {item.is_active ? 'Hiển thị' : 'Đã ẩn'}
+                                        </span>
+                                    </td>
+                                    <td className="p-5">
+                                        <div className="flex justify-center gap-2">
+                                            <button onClick={() => openEditModal(item)} className="p-2 hover:bg-blue-900 hover:text-white rounded-lg transition-all text-gray-300">📝</button>
+                                            <button onClick={() => handleDelete(item.id)} className="p-2 hover:bg-red-600 hover:text-white rounded-lg transition-all text-gray-300">🗑️</button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="5" className="text-center py-10 text-gray-400 italic">Không tìm thấy danh mục nào phù hợp.</td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
             </div>

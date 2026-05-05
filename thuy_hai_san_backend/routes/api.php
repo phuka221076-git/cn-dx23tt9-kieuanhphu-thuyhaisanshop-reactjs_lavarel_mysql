@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Api\CategoryController;
 use App\Http\Controllers\Api\UserController;
+use App\Http\Controllers\Admin\AdminDashboardController;
 
 
 /*
@@ -39,6 +40,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('my-orders', [OrderController::class, 'myOrders']);
     Route::get('/orders', [OrderController::class, 'index']);
     Route::patch('/orders/{id}/status', [OrderController::class, 'updateStatus']);
+    Route::get('/admin/analytics', [AdminDashboardController::class, 'getAnalytics']);
 
     // Quản lý Users
     Route::apiResource('users', UserController::class);
@@ -47,6 +49,7 @@ Route::middleware('auth:sanctum')->group(function () {
     // --- SỬA LỖI TẠI ĐÂY ---
     // Xóa .except(['index']) để trang Admin có thể lấy danh sách danh mục
     Route::apiResource('categories', CategoryController::class);
+    Route::post('/categories', [CategoryController::class, 'store']);
     
     // Quản lý sản phẩm (Trừ index/show đã để ở Public)
     Route::apiResource('products', ProductController::class)->except(['index', 'show']);
