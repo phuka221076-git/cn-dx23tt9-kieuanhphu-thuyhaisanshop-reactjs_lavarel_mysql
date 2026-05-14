@@ -1,0 +1,57 @@
+services:
+  # Backend Laravel
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/php/Dockerfile
+    image: thuyhaisan-backend
+    container_name: thuyhaisan-app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./thuy_hai_san_backend:/var/www
+    networks:
+      - thuyhaisan-network
+
+  # Nginx Webserver
+  webserver:
+    image: nginx:alpine
+    container_name: thuyhaisan-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - .:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    networks:
+      - thuyhaisan-network
+
+  # Database MySQL
+  db:
+    image: mysql:8.0
+    container_name: thuyhaisan-db
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: thuy_hai_san
+      MYSQL_ROOT_PASSWORD: root
+    ports:
+      - "3306:3306"
+    networks:
+      - thuyhaisan-network
+
+  # Frontend ReactJS
+  frontend:
+    image: node:18-alpine
+    container_name: thuyhaisan-frontend
+    working_dir: /app
+    volumes:
+      - ./frontend:/app
+    ports:
+      - "5173:5173"
+    command: sh -c "npm install && npm run dev -- --host"
+    networks:
+      - thuyhaisan-network
+
+networks:
+  thuyhaisan-network:
+    driver: bridge
