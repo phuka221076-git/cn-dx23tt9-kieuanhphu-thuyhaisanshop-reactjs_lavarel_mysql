@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { getAdminToken, isAuthenticated } from '../utils/auth';
+import { logout } from '../utils/auth';
 
 function Header({ user, setUser, cartCount, searchTerm, setSearchTerm }) {
     const navigate = useNavigate();
@@ -12,7 +13,7 @@ function Header({ user, setUser, cartCount, searchTerm, setSearchTerm }) {
         if (path.includes('/admin/orders')) return "Tìm mã đơn, trạng thái...";
         if (path.includes('/admin/categories')) return "Tìm tên danh mục...";
         if (path.includes('/admin/users')) return "Tìm tên, số điện thoại...";
-        if (path.includes('/admin/products')) return "Tìm tên sản phẩm, giá...";
+        if (path.includes('/admin/products')) return "Tìm tên sản phẩm...";
         return "Tìm kiếm thủy hải sản...";
     };
 
@@ -20,6 +21,7 @@ function Header({ user, setUser, cartCount, searchTerm, setSearchTerm }) {
         if (window.confirm("Bạn có chắc muốn đăng xuất không?")) {
             localStorage.removeItem('admin_token');
             localStorage.removeItem('user_info');
+            logout();
             setUser(null);
             navigate('/');
         }
@@ -44,6 +46,26 @@ function Header({ user, setUser, cartCount, searchTerm, setSearchTerm }) {
                 navigate(`/?search=${query}`);
             }
         }
+    };
+    const Navbar = () => {
+        const handleLogout = () => {
+            // Nếu bạn muốn lịch sự với server, gọi API logout của Laravel trước
+            // api.post('/logout').finally(() => {
+            //     logout();
+            // });
+
+            // Nhưng quan trọng nhất vẫn là hàm này để dọn dẹp Client
+            logout();
+        };
+
+        return (
+            <button 
+                onClick={handleLogout}
+                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition"
+            >
+                Đăng xuất
+            </button>
+        );
     };
 
     return (

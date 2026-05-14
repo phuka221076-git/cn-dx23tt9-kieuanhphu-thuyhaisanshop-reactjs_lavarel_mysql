@@ -54,10 +54,12 @@ function AdminCategory({ searchTerm = "" }) {
 
             if (isEditing) {
                 // Gửi request cập nhật danh mục kèm Token bảo mật
-                await axios.put(`/categories/${currentId}`, formData, config);
+                await axios.put(`/admin/categories/${currentId}`, formData, config);
+
+                is_active: status ? 1 : 0 // Gửi trạng thái mới
             } else {
                 // Gửi request thêm mới danh mục kèm Token bảo mật
-                await axios.post('/categories', formData, config);
+                await axios.post('/admin/categories', formData, config);
             }
             
             setShowModal(false);
@@ -95,7 +97,7 @@ function AdminCategory({ searchTerm = "" }) {
         if (window.confirm("Xác nhận xóa danh mục này?")) {
             try {
                 const token = getAdminToken();
-                await axios.delete(`/categories/${id}`, {
+                await axios.delete(`/admin/categories/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'

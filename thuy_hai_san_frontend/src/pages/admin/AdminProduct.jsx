@@ -54,21 +54,22 @@ function AdminProduct({ searchTerm = "" }) {
         } catch (error) { console.error("Lỗi lấy danh mục:", error); }
     };
 
+    // ✅ Sửa lại hàm handleDelete cho đồng bộ tiền tố /admin
     const handleDelete = async (id) => {
         if (window.confirm("Xác nhận xóa sản phẩm này?")) {
             try {
                 const token = getAdminToken();
-                await axios.delete(`/products/${id}`, {
+                await axios.delete(`/admin/products/${id}`, { // Thêm /admin
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
                     }
                 });
                 fetchProducts();
-                alert("Đã xóa!");
+                alert("Đã xóa xong!");
             } catch (error) { 
                 console.error("Lỗi xóa sản phẩm:", error.response);
-                alert("Lỗi xóa sản phẩm hoặc phiên đăng nhập hết hạn"); 
+                alert("Không thể xóa. Phú kiểm tra lại quyền Admin hoặc Route nhé!"); 
             }
         }
     };
@@ -113,10 +114,11 @@ function AdminProduct({ searchTerm = "" }) {
         const token = getAdminToken();
         const data = new FormData();
         
+        // 1. Đóng gói dữ liệu (Đảm bảo tên field khớp với Database)
         data.append('name', formData.name);
         data.append('slug', createSlug(formData.name));
-        data.append('price', parseFloat(formData.price) || 0);
-        data.append('stock', parseInt(formData.stock) || 0);
+        data.append('price', formData.price);
+        data.append('stock', formData.stock);
         data.append('category_id', formData.category_id);
         data.append('unit', formData.unit || 'kg');
         data.append('size', formData.size || '');
@@ -124,26 +126,43 @@ function AdminProduct({ searchTerm = "" }) {
         data.append('description', formData.description || '');
         data.append('is_active', formData.is_active);
         
-        if (formData.image) data.append('image', formData.image);
-        if (isEditing) data.append('_method', 'PUT');
+        // 2. Xử lý ảnh
+        if (formData.image instanceof File) {
+            data.append('image', formData.image);
+        }
 
+        // 3. ✅ QUAN TRỌNG: Sửa URL và Method cho đúng với Route Prefix 'admin'
+        let url = '/admin/products'; // Thêm /admin vào đây
+        if (isEditing) {
+            url = `/admin/products/${currentId}`; // Thêm /admin vào đây
+            data.append('_method', 'PUT'); // Method Spoofing cho Laravel
+        }
+        console.log("URL gửi đi:", isEditing ? `/admin/products/${currentId}` : '/admin/products');
         try {
-            await axios.post(isEditing ? `/products/${currentId}` : '/products', data, {
+            // Sử dụng axios instance đã cấu hình base URL
+            await axios.post(url, data, {
                 headers: { 
                     'Content-Type': 'multipart/form-data',
                     'Authorization': `Bearer ${token}`,
                     'Accept': 'application/json'
                 }
             });
+            
             setShowModal(false);
             fetchProducts();
-            alert("Thành công!");
+            alert(isEditing ? "🚀 Cập nhật hải sản thành công!" : "🌊 Đã thêm món mới vào kho!");
         } catch (error) {
             console.error("Lỗi gửi dữ liệu:", error.response);
-            if (error.response?.status === 401) {
-                alert("Phiên đăng nhập hết hạn, vui lòng đăng nhập lại hệ thống quản trị!");
+            const serverMessage = error.response?.data?.message;
+            
+            if (error.response?.status === 405) {
+                alert("Lỗi 405: Sai phương thức hoặc thiếu tiền tố /admin trong URL API.");
+            } else if (error.response?.status === 422) {
+                const validationErrors = error.response?.data?.errors;
+                const firstError = Object.values(validationErrors)[0][0];
+                alert(`Lỗi nhập liệu: ${firstError}`);
             } else {
-                alert(error.response?.data?.message || "Lỗi dữ liệu đầu vào");
+                alert(serverMessage || "Lỗi hệ thống, Phú kiểm tra lại kết nối API nhé!");
             }
         }
     };

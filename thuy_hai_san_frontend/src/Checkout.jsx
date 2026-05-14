@@ -55,15 +55,15 @@ function Checkout({ user, cartItems, setCartItems }) {
 
         setLoading(true);
         try {
-            // CẬP NHẬT PAYLOAD KHỚP VỚI DATABASE
             const payload = { 
                 total_price: total, 
                 shipping_adr: address,
-                customer_name: customerName, // Gửi tên dù là guest hay user
-                customer_phone: customerPhone, // Gửi SĐT dù là guest hay user
-                Delivery_hours: deliveryHours, // Cột mới
-                note: note, // Cột số ít 'note'
-                user_id: isGuest ? 999999999 : (user.id || null), // Gán ID mặc định cho khách vãng lai
+                customer_name: customerName,
+                customer_phone: customerPhone,
+                Delivery_hours: deliveryHours,
+                note: note,
+                // Đảm bảo ID 999999999 được gửi đi khi là khách
+                user_id: isGuest ? 999999999 : (user.id || null), 
                 items: cartItems.map(item => ({
                     product_id: item.id,
                     quantity: item.qty || 1,
@@ -71,7 +71,20 @@ function Checkout({ user, cartItems, setCartItems }) {
                 }))
             };
 
-            const config = token ? { headers: { Authorization: `Bearer ${token}` } } : {};
+            // ✅ CẤU HÌNH HEADERS LINH HOẠT
+            const config = {
+                headers: {
+                    'Accept': 'application/json',
+                    'Content-Type': 'application/json',
+                }
+            };
+
+            // Chỉ đính kèm Authorization nếu thực sự có token
+            if (token) {
+                config.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            // Gửi request
             await axios.post('/orders', payload, config);
             
             alert("Đặt hàng thành công! Cảm ơn bạn đã ủng hộ Thủy hải sản sạch.");
@@ -79,13 +92,22 @@ function Checkout({ user, cartItems, setCartItems }) {
             localStorage.removeItem('cart');
             navigate('/');
         } catch (err) {
-            alert("Lỗi: " + (err.response?.data?.message || "Không thể đặt hàng"));
+            console.error("Checkout Error:", err.response?.data);
+            const serverMessage = err.response?.data?.message;
+            
+            if (err.response?.status === 401) {
+                alert("Lỗi xác thực: Vui lòng kiểm tra lại cấu hình API cho khách vãng lai.");
+            } else {
+                alert("Lỗi: " + (serverMessage || "Không thể đặt hàng"));
+            }
         } finally {
             setLoading(false);
         }
     };
 
     if (cartItems.length === 0) return null;
+
+
 
     return (
         <div className="max-w-6xl mx-auto mt-10 p-10 bg-white rounded-[40px] shadow-2xl border font-sans mb-20">

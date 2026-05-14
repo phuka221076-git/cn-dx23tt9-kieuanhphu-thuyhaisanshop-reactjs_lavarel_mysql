@@ -66,7 +66,11 @@ function ProductDetail({ addToCart }) {
 
                 <div className="text-gray-600 leading-relaxed">
                     <h3 className="font-bold text-blue-900 mb-2 uppercase">Mô tả sản phẩm:</h3>
-                    <p>{product.description || "Thủy hải sản tươi sống đánh bắt trong ngày, đảm bảo chất lượng tươi ngon nhất khi đến tay khách hàng."}</p>
+                    
+                    <div style={{ whiteSpace: 'pre-wrap' }}>
+                        {product.description}
+                    </div>
+                    
                 </div>
 
                 {/* Nút bấm đã được cập nhật logic handleBuyNow */}

@@ -10,7 +10,7 @@ class Category extends Model
     use HasFactory;
 
     // Thêm dòng này để cho phép lưu dữ liệu nhanh từ Seeder
-    protected $fillable = ['name', 'description', 'slug'];
+    protected $fillable = ['name', 'description', 'slug', 'is_active'];
 
     // Thiết lập mối quan hệ với Sản phẩm (1 danh mục có nhiều sản phẩm)
     public function products()

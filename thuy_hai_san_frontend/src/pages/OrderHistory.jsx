@@ -1,26 +1,30 @@
 import React, { useState, useEffect } from 'react';
 import api from '../api/axios'; 
-import { getUserToken, getAdminToken, isAuthenticated } from '../utils/auth';
 
 function OrderHistory() {
     const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     
-    // Lấy token linh hoạt: Ưu tiên User, nếu không có thì lấy Admin
-    const token = getUserToken() || getAdminToken(); 
-    const isLogged = isAuthenticated('user') || isAuthenticated('admin');
+    // 🔍 CƠ CHẾ TỰ ĐỘNG QUÉT TOKEN (Dành cho cả Admin và User)
+    const token = localStorage.getItem('admin_token') || 
+                  localStorage.getItem('user_token') || 
+                  localStorage.getItem('token');
+    
+    const loggedIn = !!token;
 
     useEffect(() => {
         const fetchOrders = async () => {
-            // Nếu không có bất kỳ token nào, ngừng fetch
             if (!token) {
                 setLoading(false);
                 return;
             }
 
             try {
-                // Sử dụng api.get thay vì axios.get
+                setLoading(true);
+                setError(null);
+
+                // Gửi token tìm được lên Backend
                 const res = await api.get('/my-orders', {
                     headers: { 
                         Authorization: `Bearer ${token}`,
@@ -28,17 +32,16 @@ function OrderHistory() {
                     }
                 });
                 
-                /**
-                 * Lưu ý: Nếu Backend trả về dạng paginate(), dữ liệu nằm trong res.data.data
-                 * Nếu Backend trả về get(), dữ liệu nằm trong res.data
-                 */
                 const responseData = res.data.data ? res.data.data : res.data;
                 setOrders(Array.isArray(responseData) ? responseData : []);
                 
             } catch (err) {
-                console.error("Lỗi truy xuất đơn hàng:", err);
-                const errorMsg = err.response?.data?.message || "Không thể tải danh sách đơn hàng.";
-                setError(errorMsg);
+                console.error("Lỗi xác thực:", err);
+                if (err.response?.status === 401) {
+                    setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.");
+                } else {
+                    setError(err.response?.data?.message || "Không thể tải danh sách đơn hàng.");
+                }
             } finally {
                 setLoading(false);
             }
@@ -48,16 +51,16 @@ function OrderHistory() {
     }, [token]);
 
     // Giao diện khi chưa đăng nhập
-    if (!isLogged) {
+    if (!loggedIn) {
         return (
             <div className="max-w-4xl mx-auto mt-20 p-10 bg-red-50 rounded-[40px] text-center shadow-inner">
                 <h2 className="text-2xl font-black text-red-900 uppercase">Yêu cầu xác thực!</h2>
-                <p className="text-red-700 mt-2">Vui lòng đăng nhập tài khoản để xem lịch sử mua hàng.</p>
+                <p className="text-red-700 mt-2">Vui lòng đăng nhập để xem lịch sử mua hàng của bạn.</p>
             </div>
         );
     }
 
-    if (loading) return <div className="text-center mt-20 font-bold animate-pulse text-blue-900 italic">Đang kết nối hệ thống Thủy hải sản...</div>;
+    if (loading) return <div className="text-center mt-20 font-bold animate-pulse text-blue-900 italic">Đang tải dữ liệu đơn hàng...</div>;
 
     return (
         <div className="max-w-4xl mx-auto mt-10 p-6 font-sans">
@@ -78,7 +81,6 @@ function OrderHistory() {
                 <div className="grid gap-8">
                     {orders.map((order) => (
                         <div key={order.id} className="bg-white p-6 rounded-[35px] shadow-md border border-gray-100 flex flex-col relative transition-hover duration-300 hover:shadow-lg">
-                            {/* Mã đơn hàng & Trạng thái */}
                             <div className="flex justify-between items-start border-b border-gray-50 pb-4 mb-4">
                                 <div>
                                     <span className="text-[10px] font-black bg-blue-900 text-white px-3 py-1 rounded-full uppercase">
@@ -96,13 +98,10 @@ function OrderHistory() {
                                 </span>
                             </div>
 
-                            {/* Danh sách sản phẩm con */}
                             <div className="space-y-3 mb-6">
                                 {order.items?.map((item) => (
                                     <div key={item.id} className="flex items-center gap-4 bg-gray-50/50 p-3 rounded-2xl border border-gray-100">
-                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-xl">
-                                            🐟
-                                        </div>
+                                        <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center text-xl">🐟</div>
                                         <div className="flex-1">
                                             <p className="text-sm font-bold text-blue-900 leading-tight">
                                                 {item.product?.name || "Sản phẩm không khả dụng"}
@@ -120,7 +119,6 @@ function OrderHistory() {
                                 ))}
                             </div>
 
-                            {/* Footer thông tin nhận hàng */}
                             <div className="flex justify-between items-end mt-auto pt-4 border-t border-dashed border-gray-200">
                                 <div className="max-w-[60%]">
                                     <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">Địa chỉ nhận</p>

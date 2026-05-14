@@ -63,17 +63,17 @@ class CategoryController extends Controller
     {
         $category = Category::findOrFail($id);
 
-        // 1. Thêm validate description
         $request->validate([
             'name' => 'required|unique:categories,name,' . $id,
-            'description' => 'nullable|string'
+            'description' => 'nullable|string',
+            'is_active' => 'nullable|boolean' // Thêm validate cho trạng thái
         ]);
 
-        // 2. Cập nhật trường description
         $category->update([
             'name' => $request->name,
             'slug' => Str::slug($request->name),
-            'description' => $request->description // CẬP NHẬT MÔ TẢ TẠI ĐÂY
+            'description' => $request->description,
+            'is_active' => $request->is_active // QUAN TRỌNG: Phải có dòng này thì DB mới đổi
         ]);
 
         return response()->json($category);

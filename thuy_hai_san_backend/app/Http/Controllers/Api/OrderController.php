@@ -10,8 +10,6 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use App\Services\StockService;
 
-
-
 class OrderController extends Controller
 {
     protected $stockService;
@@ -21,81 +19,52 @@ class OrderController extends Controller
         $this->stockService = $stockService;
     }
 
-   public function index(Request $request)
+    /**
+     * Danh sách đơn hàng dành cho trang Quản lý (Admin)
+     */
+    public function index(Request $request)
     {
-        /* if (!auth('sanctum')->check()) {
-            return response()->json(['message' => 'Vui lòng đăng nhập'], 401);
-        }
-
-        $user = auth('sanctum')->user();
-        
-        // BƯỚC 1: Chỉ khởi tạo, TUYỆT ĐỐI không dùng get() ở đây
-        $query = Order::with(['user', 'items.product']);
-
-        // BƯỚC 2: Thêm các điều kiện lọc (Cứ thoải mái, vì nó vẫn đang là Builder)
-        if ($user->role !== 'admin') {
-            $query->where('user_id', $user->id);
-        }
-
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function($q) use ($search) {
-                $q->where('id', 'like', "%$search%")
-                ->orWhere('customer_name', 'like', "%$search%")
-                ->orWhere('customer_phone', 'like', "%$search%");
-            });
-        }
-        // --- ĐÂY LÀ PHẦN THIẾU ---
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // BƯỚC 3: Cuối cùng mới thực thi để lấy dữ liệu (Dùng paginate để React nhận được dữ liệu phân trang)
-        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
-
-        return response()->json($orders); */
-
-        // 1. Kiểm tra đăng nhập qua Sanctum
         if (!auth('sanctum')->check()) {
             return response()->json(['message' => 'Vui lòng đăng nhập'], 401);
         }
 
         $user = auth('sanctum')->user();
-        
-        // 2. Khởi tạo Query với đầy đủ quan hệ (Fix lỗi thiếu sản phẩm khi xem lịch sử)
         $query = Order::with(['user', 'items.product']);
 
-        // 3. Phân quyền: Nếu không phải admin thì chỉ lấy đơn của chính mình
+        // Phân quyền: Admin xem tất cả, User chỉ xem đơn của mình
         if ($user->role !== 'admin') {
             $query->where('user_id', $user->id);
         }
 
-        // 4. Lọc theo trạng thái (Fix lỗi lọc không hoạt động)
-        if ($request->filled('status')) {
-            $query->where('status', $request->status);
-        }
-
-        // 5. Tìm kiếm theo từ khóa
+        // Bộ lọc tìm kiếm
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function($q) use ($search) {
                 $q->where('id', 'like', "%$search%")
-                ->orWhere('customer_name', 'like', "%$search%")
-                ->orWhere('customer_phone', 'like', "%$search%");
+                  ->orWhere('customer_name', 'like', "%$search%")
+                  ->orWhere('customer_phone', 'like', "%$search%");
             });
         }
 
-        // 6. Thực thi và phân trang (Sắp xếp mới nhất lên đầu)
-        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
+        // Lọc theo trạng thái
+        if ($request->filled('status')) {
+            $query->where('status', $request->status);
+        }
 
+        $orders = $query->orderBy('created_at', 'desc')->paginate(10);
         return response()->json($orders);
     }
 
+    /**
+     * Xử lý đặt hàng (Cho cả User và Khách vãng lai)
+     */
     public function store(Request $request)
     {
         $request->validate([
             'total_price'        => 'required|numeric',
             'shipping_adr'       => 'required|string',
+            'customer_name'      => 'required|string',
+            'customer_phone'     => 'required|string',
             'items'              => 'required|array',
             'items.*.product_id' => 'required|exists:products,id',
             'items.*.quantity'   => 'required|integer|min:1',
@@ -103,18 +72,21 @@ class OrderController extends Controller
         ]);
 
         return DB::transaction(function () use ($request) {
-            $isLoggedIn = auth('sanctum')->check();
-            $userId = $isLoggedIn ? auth('sanctum')->id() : 999999999;
+            // Kiểm tra đăng nhập (không bắt buộc)
+            $user = auth('sanctum')->user();
+            
+            // Nếu không có user đăng nhập, dùng ID 999999999 cho khách vãng lai
+            $userId = $user ? $user->id : 999999999;
 
             $order = Order::create([
-                'user_id' => $userId,
-                'customer_name' => $request->customer_name,
+                'user_id'        => $userId,
+                'customer_name'  => $request->customer_name,
                 'customer_phone' => $request->customer_phone,
                 'Delivery_hours' => $request->Delivery_hours,
-                'shipping_adr' => $request->shipping_adr,
-                'note' => $request->note,
-                'total_price' => $request->total_price,
-                'status' => 'pending',
+                'shipping_adr'   => $request->shipping_adr,
+                'note'           => $request->note,
+                'total_price'    => $request->total_price,
+                'status'         => 'pending',
             ]);
 
             foreach ($request->items as $item) {
@@ -133,6 +105,9 @@ class OrderController extends Controller
         });
     }
 
+    /**
+     * Cập nhật trạng thái đơn hàng và xử lý kho (Admin)
+     */
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
@@ -147,11 +122,12 @@ class OrderController extends Controller
                 return response()->json(['message' => 'Trạng thái không đổi'], 200);
             }
 
-            // Xử lý kho hàng khi hủy hoặc chuyển trạng thái
+            // Hoàn kho nếu hủy đơn sau khi đã trừ kho
             if ($newStatus === 'cancelled' && in_array($order->status, ['processing', 'shipping', 'completed'])) {
                 $this->stockService->restoreStock($order);
             }
 
+            // Trừ kho khi chuyển sang trạng thái xử lý/giao hàng
             if (in_array($newStatus, ['processing', 'shipping']) && $order->status === 'pending') {
                 foreach ($order->items as $item) {
                     if ($item->product->stock < $item->quantity) {
@@ -168,79 +144,38 @@ class OrderController extends Controller
         });
     }
 
+    /**
+     * Xem chi tiết đơn hàng
+     */
     public function show($id)
     {
         $order = Order::with(['user', 'items.product'])->findOrFail($id);
         $user = auth('sanctum')->user();
         
-        if ($user->role !== 'admin' && $order->user_id !== $user->id) {
+        // Kiểm tra quyền: Admin hoặc chủ nhân đơn hàng mới được xem
+        if (!$user || ($user->role !== 'admin' && $order->user_id !== $user->id)) {
             return response()->json(['message' => 'Không có quyền xem'], 403);
         }
 
         return response()->json($order);
     }
 
-    public function myOrders()
+    /**
+     * Lấy lịch sử mua hàng cá nhân (Dùng cho cả Phú và Hằng)
+     */
+    public function getUserOrders()
     {
-        try {
-            // Lấy user đang đăng nhập từ token
-            $user = Auth::user();
+        $user = auth('sanctum')->user();
 
-            // Kiểm tra xem user có tồn tại không (phòng hờ)
-            if (!$user) {
-                return response()->json(['message' => 'User not found'], 404);
-            }
-
-            // Lấy danh sách đơn hàng kèm theo các sản phẩm bên trong (eager loading)
-            // Lưu ý: Đảm bảo bảng orders có cột user_id
-            $orders = Order::where('user_id', auth()->id())
-                   ->with(['items.product'])
-                   ->orderBy('created_at', 'desc')
-                   ->get();
-
-            return response()->json($orders);
-            
-        } catch (\Exception $e) {
-            // Trả về thông báo lỗi chi tiết để debug thay vì lỗi 500 chung chung
-            return response()->json([
-                'error' => 'Lỗi hệ thống: ' . $e->getMessage()
-            ], 500);
+        if (!$user) {
+            return response()->json(['message' => 'Vui lòng đăng nhập'], 401);
         }
-    }
 
-    public function getAdminOrders()
-    {
-        // Lấy tất cả đơn hàng, kèm thông tin User nếu có
-        $orders = Order::with('user')->orderBy('created_at', 'desc')->get();
+        $orders = Order::where('user_id', $user->id)
+                    ->with(['items.product'])
+                    ->orderBy('created_at', 'desc')
+                    ->get();
 
-        $data = $orders->map(function($order) {
-            // Kiểm tra nếu là Guest (ID đặc biệt) hoặc không có liên kết User
-            if ($order->user_id == 999999999 || !$order->user) {
-                return [
-                    'id' => $order->id,
-                    'display_name' => $order->customer_name ?? 'Khách vãng lai',
-                    'display_phone' => $order->customer_phone,
-                    'display_address' => $order->shipping_adr,
-                    'total' => $order->total_price,
-                    'status' => $order->status,
-                    'type' => 'Guest',
-                    'created_at' => $order->created_at
-                ];
-            }
-
-            // Nếu là Thành viên (User đã đăng nhập)
-            return [
-                'id' => $order->id,
-                'display_name' => $order->user->name, // Lấy tên từ bảng users
-                'display_phone' => $order->user->phone ?? $order->customer_phone,
-                'display_address' => $order->shipping_adr,
-                'total' => $order->total_price,
-                'status' => $order->status,
-                'type' => 'Member',
-                'created_at' => $order->created_at
-            ];
-        });
-
-        return response()->json($data);
+        return response()->json($orders, 200);
     }
 }

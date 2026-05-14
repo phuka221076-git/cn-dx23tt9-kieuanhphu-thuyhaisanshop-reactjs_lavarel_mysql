@@ -24,7 +24,7 @@ function AdminOrder() {
         try {
             setLoading(true);
             // Thêm tham số status vào API call
-            const res = await axios.get(`http://127.0.0.1:8000/api/orders?search=${keyword}&page=${page}&status=${status}`, {
+            const res = await axios.get(`http://127.0.0.1:8000/api/admin/orders?search=${keyword}&page=${page}&status=${status}`, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     Accept: 'application/json'
@@ -64,7 +64,7 @@ function AdminOrder() {
     const handleStatusChange = async (orderId, newStatus) => {
         if (!window.confirm(`Xác nhận đổi trạng thái đơn #${orderId}?`)) return;
         try {
-            await axios.patch(`http://127.0.0.1:8000/api/orders/${orderId}/status`, 
+            await axios.patch(`http://127.0.0.1:8000/api/admin/orders/${orderId}/status`, 
                 { status: newStatus },
                 { headers: { Authorization: `Bearer ${token}` } }
             );

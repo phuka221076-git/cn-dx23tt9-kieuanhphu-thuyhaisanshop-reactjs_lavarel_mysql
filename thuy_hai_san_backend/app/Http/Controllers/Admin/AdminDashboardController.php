@@ -7,47 +7,55 @@ use Illuminate\Http\Request;
 use App\Models\Order;
 use App\Models\OrderItem;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon; // Import thư viện xử lý thời gian
+use Carbon\Carbon;
 
 class AdminDashboardController extends Controller 
 {
     public function getAnalytics(Request $request)
     {
+        // ✅ BƯỚC 1: KIỂM TRA QUYỀN ADMIN (CHỐNG LỖI TRUY CẬP BỊ TỪ CHỐI)
+        // Sử dụng auth('sanctum')->user() để lấy thông tin từ admin_token
+        $user = auth('sanctum')->user();
+
+        if (!$user || $user->role !== 'admin') {
+            return response()->json([
+                'message' => 'Truy cập bị từ chối! Khu vực này chỉ dành riêng cho Quản trị viên.'
+            ], 403);
+        }
+
         // Khởi tạo query mặc định cho đơn hàng đã hoàn thành
         $orderQuery = Order::where('status', 'completed');
         $itemQuery = OrderItem::join('orders', 'order_items.order_id', '=', 'orders.id')
             ->join('products', 'order_items.product_id', '=', 'products.id')
             ->where('orders.status', 'completed');
 
-        // Lấy tham số lọc thời gian từ Frontend (mặc định nếu không gửi là 'all')
+        // Lấy tham số lọc thời gian
         $filter = $request->query('filter', 'all');
         $now = Carbon::now();
 
-        // Xử lý mốc thời gian bằng Carbon
+        // ✅ BƯỚC 2: XỬ LÝ MỐC THỜI GIAN CHÍNH XÁC
         if ($filter === 'today') {
-            // Lọc trong ngày hôm nay
             $orderQuery->whereDate('orders.created_at', Carbon::today());
             $itemQuery->whereDate('orders.created_at', Carbon::today());
         } elseif ($filter === 'week') {
-            // Lọc trong tuần này (từ đầu tuần đến hiện tại)
-            $orderQuery->whereBetween('orders.created_at', [$now->startOfWeek()->toDateTimeString(), Carbon::now()]);
-            $itemQuery->whereBetween('orders.created_at', [$now->startOfWeek()->toDateTimeString(), Carbon::now()]);
+            // Fix: Dùng clone() để tránh việc startOfWeek() làm thay đổi biến $now cho các logic sau
+            $startOfWeek = (clone $now)->startOfWeek()->toDateTimeString();
+            $orderQuery->whereBetween('orders.created_at', [$startOfWeek, Carbon::now()]);
+            $itemQuery->whereBetween('orders.created_at', [$startOfWeek, Carbon::now()]);
         } elseif ($filter === 'month') {
-            // Lọc trong tháng này
             $orderQuery->whereMonth('orders.created_at', $now->month)
                        ->whereYear('orders.created_at', $now->year);
             $itemQuery->whereMonth('orders.created_at', $now->month)
                       ->whereYear('orders.created_at', $now->year);
         } elseif ($filter === 'year') {
-            // Lọc trong năm nay
             $orderQuery->whereYear('orders.created_at', $now->year);
             $itemQuery->whereYear('orders.created_at', $now->year);
         }
 
-        // 1. Tính tổng doanh thu theo mốc thời gian đã lọc
+        // 1. Tính tổng doanh thu
         $totalRevenue = $orderQuery->sum('total_price');
 
-        // 2. Tính top sản phẩm bán chạy theo mốc thời gian đã lọc
+        // 2. Tính top sản phẩm bán chạy
         $topProducts = $itemQuery->select(
                 'products.id',
                 'products.name',
@@ -62,7 +70,8 @@ class AdminDashboardController extends Controller
         return response()->json([
             'filter_applied' => $filter,
             'total_revenue' => $totalRevenue,
-            'top_products' => $topProducts
+            'top_products' => $topProducts,
+            'admin_name' => $user->name // Trả về tên để hiển thị "Chào Phú" trên báo cáo
         ]);
     }
 }

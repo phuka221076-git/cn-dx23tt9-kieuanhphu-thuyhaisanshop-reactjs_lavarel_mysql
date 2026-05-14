@@ -20,7 +20,7 @@ function AdminUser() {
     const fetchUsers = useCallback(async () => {
         try {
             const token = getAdminToken();
-            const res = await axios.get(`/users`, {
+            const res = await axios.get(`/admin/users`, {
                 params: { search: searchTerm },
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -54,9 +54,9 @@ function AdminUser() {
             };
 
             if (isEditing) {
-                await axios.put(`/users/${currentId}`, payload, config);
+                await axios.put(`/admin/users/${currentId}`, payload, config);
             } else {
-                await axios.post('/users', payload, config);
+                await axios.post('/admin/users', payload, config);
             }
             setShowModal(false);
             fetchUsers();
@@ -78,7 +78,7 @@ function AdminUser() {
         if(window.confirm("Xác nhận xóa nhân sự này khỏi hệ thống?")) {
             try {
                 const token = getAdminToken();
-                await axios.delete(`/users/${id}`, {
+                await axios.delete(`/admin/users/${id}`, {
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Accept': 'application/json'
