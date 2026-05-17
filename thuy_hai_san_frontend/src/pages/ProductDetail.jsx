@@ -33,6 +33,31 @@ function ProductDetail({ addToCart }) {
 
     const isOutOfStock = product.stock <= 0;
 
+    /* const addToCart = (product) => {
+        // 1. Lấy giỏ hàng hiện tại từ LocalStorage (nếu chưa có thì tạo mảng rỗng)
+        const cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        // 2. Kiểm tra xem sản phẩm đã có trong giỏ chưa
+        const existingProductIndex = cart.findIndex(item => item.id === product.id);
+
+        if (existingProductIndex > -1) {
+            // Nếu có rồi thì tăng số lượng (quantity)
+            cart[existingProductIndex].quantity += 1;
+        } else {
+            // Nếu chưa có thì thêm mới với quantity = 1
+            cart.push({ ...product, quantity: 1 });
+        }
+
+        // 3. Lưu lại vào LocalStorage
+        localStorage.setItem('cart', JSON.stringify(cart));
+
+        // 4. Thông báo cho người dùng (tùy chọn)
+        alert(`Đã thêm ${product.name} vào giỏ hàng!`);
+        
+        // Nếu Phú muốn sau khi thêm xong thì nhảy qua trang giỏ hàng luôn:
+        // window.location.href = '/cart'; 
+    }; */
+
     return (
         <div className="max-w-6xl mx-auto p-10 grid grid-cols-1 md:grid-cols-2 gap-10">
             {/* Ảnh sản phẩm */}
@@ -73,17 +98,17 @@ function ProductDetail({ addToCart }) {
                     
                 </div>
 
-                {/* Nút bấm đã được cập nhật logic handleBuyNow */}
+                {/* Nút bấm đã được cập nhật logic */}
                 <button 
                     disabled={isOutOfStock}
-                    onClick={handleBuyNow} 
+                    onClick={() => addToCart(product)} // 'product' là biến chứa dữ liệu từ API
                     className={`w-full py-4 rounded-2xl font-black uppercase shadow-xl transition-all active:scale-95 ${
                         isOutOfStock 
                         ? 'bg-gray-300 cursor-not-allowed text-gray-500' 
                         : 'bg-blue-900 text-white hover:bg-yellow-400 hover:text-blue-900'
                     }`}
                 >
-                    {isOutOfStock ? 'Sản phẩm tạm hết hàng' : 'Mua ngay và Thanh toán'}
+                    {isOutOfStock ? 'Sản phẩm tạm hết hàng' : 'Thêm vào giỏ hàng'}
                 </button>
             </div>
         </div>

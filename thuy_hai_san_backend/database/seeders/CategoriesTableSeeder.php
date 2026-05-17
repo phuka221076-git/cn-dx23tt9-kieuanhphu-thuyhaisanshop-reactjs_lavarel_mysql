@@ -23,8 +23,8 @@ class CategoriesTableSeeder extends Seeder
             array (
                 'id' => 1,
                 'name' => 'Nhóm Tôm',
-                'slug' => 'nhom-tom',
                 'description' => NULL,
+                'slug' => 'nhom-tom',
                 'is_active' => 1,
                 'created_at' => '2026-04-25 03:29:41',
                 'updated_at' => '2026-04-25 03:29:41',
@@ -33,8 +33,8 @@ class CategoriesTableSeeder extends Seeder
             array (
                 'id' => 2,
                 'name' => 'Nhóm Cá',
-                'slug' => 'nhom-ca',
                 'description' => NULL,
+                'slug' => 'nhom-ca',
                 'is_active' => 1,
                 'created_at' => '2026-04-25 03:29:41',
                 'updated_at' => '2026-04-25 03:29:41',
@@ -43,8 +43,8 @@ class CategoriesTableSeeder extends Seeder
             array (
                 'id' => 3,
                 'name' => 'Cua & Ghẹ',
-                'slug' => 'cua-ghe',
                 'description' => NULL,
+                'slug' => 'cua-ghe',
                 'is_active' => 1,
                 'created_at' => '2026-04-25 03:29:41',
                 'updated_at' => '2026-04-25 03:29:41',
@@ -53,8 +53,8 @@ class CategoriesTableSeeder extends Seeder
             array (
                 'id' => 4,
                 'name' => 'Mực & Bạch Tuộc',
-                'slug' => 'muc-bach-tuoc',
                 'description' => NULL,
+                'slug' => 'muc-bach-tuoc',
                 'is_active' => 1,
                 'created_at' => '2026-04-25 03:29:41',
                 'updated_at' => '2026-04-25 03:29:41',
@@ -63,11 +63,21 @@ class CategoriesTableSeeder extends Seeder
             array (
                 'id' => 5,
                 'name' => 'Đồ khô đặc sản',
-                'slug' => 'do-kho-dac-san',
                 'description' => NULL,
+                'slug' => 'do-kho-dac-san',
                 'is_active' => 1,
                 'created_at' => '2026-04-25 03:29:41',
                 'updated_at' => '2026-04-25 03:29:41',
+            ),
+            5 => 
+            array (
+                'id' => 6,
+                'name' => 'Mắm các loại',
+                'description' => 'Lên men',
+                'slug' => 'mam-cac-loai',
+                'is_active' => 0,
+                'created_at' => '2026-05-05 14:20:30',
+                'updated_at' => '2026-05-12 15:05:53',
             ),
         ));
         
