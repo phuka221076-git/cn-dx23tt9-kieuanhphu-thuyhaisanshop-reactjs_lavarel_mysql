@@ -9,10 +9,10 @@ services:
     environment:
       MYSQL_DATABASE: thuy_hai_san
       # Root vẫn cần có pass (quyền tối cao)
-      MYSQL_ROOT_PASSWORD: 'm5!xNd21x2)rc(l*' 
+      MYSQL_ROOT_PASSWORD: 'm5!xNd21x2)rcsd(l*' 
       # Tạo account admin riêng theo ý Phú
       MYSQL_USER: admin
-      MYSQL_PASSWORD: 'm5!xNd21x2)rc(l*'
+      MYSQL_PASSWORD: 'm5s!xdNd21x2wer)rc(l*'
     ports:
       - "3307:3306"
     volumes:
@@ -33,7 +33,7 @@ services:
         - DB_PORT=3306
         - DB_DATABASE=thuy_hai_san
         - DB_USERNAME=admin                # QUAN TRỌNG: Khai báo user admin ở đây
-        - DB_PASSWORD='m5!xNd21x2)rc(l*'
+        - DB_PASSWORD='m5!xNddsds21x2)rc(l*'
       depends_on:
         - mysql_db
 
